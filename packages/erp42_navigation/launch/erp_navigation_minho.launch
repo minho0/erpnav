@@ -1,0 +1,46 @@
+<launch>
+  <!-- Arguments -->
+  <arg name="map_file" default="$(find erp42_navigation)/maps/map.yaml" />
+  <arg name="open_rviz" default="true" />
+  <arg name="move_forward_only" default="false" />
+  <arg name="scan_topic" default="/scan"/>
+
+  <!-- ERP42 Bringup -->
+  <include file="$(find erp42_bringup)/launch/erp42_core.launch" />
+
+  <!-- Map Server -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)" />
+
+  <!-- PointCloud2 → LaserScan 변환 -->
+  <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pc_to_scan">
+    <param name="target_frame" value="base_link" />
+    <param name="transform_tolerance" value="0.01" />
+    <param name="min_height" value="-0.1" />
+    <param name="max_height" value="0.3" />
+    <param name="angle_min" value="-1.57" />
+    <param name="angle_max" value="1.57" />
+    <param name="angle_increment" value="0.0087" />
+    <param name="scan_time" value="0.1" />
+    <param name="range_min" value="0.3" />
+    <param name="range_max" value="30.0" />
+    <param name="use_inf" value="true" />
+    <param name="inf_epsilon" value="1.0" />
+    <remap from="cloud_in" to="/hesai/pandar" />
+    <remap from="scan" to="/scan" />
+  </node>
+
+
+  <!-- AMCL Localization -->
+  <include file="$(find erp42_navigation)/launch/amcl.launch" />
+
+  <!-- Move Base -->
+  <include file="$(find erp42_navigation)/launch/move_base.launch">
+    <arg name="move_forward_only" value="$(arg move_forward_only)" />
+  </include>
+
+  <!-- RViz -->
+  <group if="$(arg open_rviz)">
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find erp42_navigation)/rviz/erp42_navigation.rviz" />
+  </group>
+</launch>
